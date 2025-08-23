@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class CreateAccountPage extends StatefulWidget {
   const CreateAccountPage({super.key});
@@ -19,7 +20,8 @@ class _CreateAccountPageState extends State<CreateAccountPage>
   static const backgroundColor = Color(0xFFF5F5F5);
   static const fieldColor = Color(0xFFE6E6FA);
   static const textColor = Color(0xFF580F41);
-  static const buttonColor = Color(0xFF6A0DAD);
+  static const buttonGradientStart = Color(0xFF8E2DE2);
+  static const buttonGradientEnd = Color(0xFF4A00E0);
   static const buttonTextColor = Color(0xFFF5F5F5);
 
   late AnimationController _controller;
@@ -63,7 +65,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
   InputDecoration _inputDecoration(String label) {
     return InputDecoration(
       labelText: label,
-      labelStyle: const TextStyle(color: textColor),
+      labelStyle: GoogleFonts.poppins(color: textColor),
       filled: true,
       fillColor: fieldColor,
       border: OutlineInputBorder(
@@ -76,6 +78,10 @@ class _CreateAccountPageState extends State<CreateAccountPage>
 
   @override
   Widget build(BuildContext context) {
+    final textTheme = GoogleFonts.poppinsTextTheme(
+      Theme.of(context).textTheme,
+    );
+
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
@@ -98,90 +104,119 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                   constraints: const BoxConstraints(maxWidth: 400),
                   child: Form(
                     key: _formKey,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 12),
-                        TextFormField(
-                          decoration:
-                              _inputDecoration('Swapaza username or email'),
-                          style: const TextStyle(color: textColor),
-                          onChanged: (val) => _email = val,
-                          validator: (val) =>
-                              val!.isEmpty ? 'Vul je email in' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          decoration: _inputDecoration('Password'),
-                          style: const TextStyle(color: textColor),
-                          obscureText: true,
-                          onChanged: (val) => _password = val,
-                          validator: (val) =>
-                              val!.length < 6 ? 'Minimaal 6 tekens' : null,
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          decoration: _inputDecoration('Confirm password'),
-                          style: const TextStyle(color: textColor),
-                          obscureText: true,
-                          onChanged: (val) => _confirmPassword = val,
-                          validator: (val) => val != _password
-                              ? 'Wachtwoorden komen niet overeen'
-                              : null,
-                        ),
-                        const SizedBox(height: 20),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Checkbox(
-                              value: _agreedToTerms,
-                              onChanged: (val) =>
-                                  setState(() => _agreedToTerms = val!),
-                              fillColor: MaterialStateProperty.all(fieldColor),
-                              checkColor: buttonColor,
-                              visualDensity: VisualDensity.compact,
-                              materialTapTargetSize:
-                                  MaterialTapTargetSize.shrinkWrap,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
+                    child: Theme(
+                      data: Theme.of(context).copyWith(textTheme: textTheme),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            decoration: _inputDecoration('Username or email'),
+                            style: GoogleFonts.poppins(color: textColor),
+                            onChanged: (val) => _email = val,
+                            validator: (val) =>
+                                val!.isEmpty ? 'Vul je email in' : null,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            decoration: _inputDecoration('Password'),
+                            style: GoogleFonts.poppins(color: textColor),
+                            obscureText: true,
+                            onChanged: (val) => _password = val,
+                            validator: (val) =>
+                                val!.length < 6 ? 'Minimaal 6 tekens' : null,
+                          ),
+                          const SizedBox(height: 16),
+                          TextFormField(
+                            decoration: _inputDecoration('Confirm password'),
+                            style: GoogleFonts.poppins(color: textColor),
+                            obscureText: true,
+                            onChanged: (val) => _confirmPassword = val,
+                            validator: (val) => val != _password
+                                ? 'Wachtwoorden komen niet overeen'
+                                : null,
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Checkbox(
+                                value: _agreedToTerms,
+                                onChanged: (val) =>
+                                    setState(() => _agreedToTerms = val!),
+                                fillColor:
+                                    MaterialStateProperty.all(fieldColor),
+                                checkColor: buttonGradientEnd,
+                                visualDensity: VisualDensity.compact,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
                               ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'I agree to the terms of service and privacy policy',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    color: textColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          Container(
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  buttonGradientStart,
+                                  buttonGradientEnd
+                                ],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black26,
+                                  offset: Offset(0, 4),
+                                  blurRadius: 6,
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            const Expanded(
+                            child: ElevatedButton(
+                              onPressed: _submit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                               child: Text(
-                                'I agree to the terms of service and privacy policy',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: textColor,
+                                'Create Account',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: buttonTextColor,
+                                  shadows: [
+                                    Shadow(
+                                      offset: Offset(0, 1),
+                                      blurRadius: 2,
+                                      color: Colors.black26,
+                                    )
+                                  ],
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: buttonColor,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 3,
-                            shadowColor: buttonColor.withOpacity(0.4),
                           ),
-                          child: const Text(
-                            'Create Account',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: buttonTextColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                      ],
+                          const SizedBox(height: 12),
+                        ],
+                      ),
                     ),
                   ),
                 ),

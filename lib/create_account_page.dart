@@ -35,7 +35,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
     );
     _fadeAnimation =
         CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.0).animate(
+    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
     Future.delayed(const Duration(milliseconds: 200), () {
@@ -52,7 +52,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
   void _submit() {
     if (_formKey.currentState!.validate() && _agreedToTerms) {
       print('✅ Account aangemaakt voor $_email');
-      Navigator.pop(context); // terug naar login
+      Navigator.pop(context);
     } else if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Je moet akkoord gaan met de voorwaarden')),
@@ -70,6 +70,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide.none,
       ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
     );
   }
 
@@ -85,23 +86,23 @@ class _CreateAccountPageState extends State<CreateAccountPage>
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 400),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Form(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: ScaleTransition(
+                scale: _scaleAnimation,
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 400),
+                  child: Form(
                     key: _formKey,
                     child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 12),
                         TextFormField(
                           decoration:
                               _inputDecoration('Swapaza username or email'),
@@ -129,7 +130,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                               ? 'Wachtwoorden komen niet overeen'
                               : null,
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
@@ -158,7 +159,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 20),
                         ElevatedButton(
                           onPressed: _submit,
                           style: ElevatedButton.styleFrom(
@@ -179,23 +180,11 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                             ),
                           ),
                         ),
+                        const SizedBox(height: 12),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  FadeTransition(
-                    opacity: _fadeAnimation,
-                    child: ScaleTransition(
-                      scale: _scaleAnimation,
-                      child: Image.asset(
-                        'assets/swapaza_logo.png',
-                        height: 50,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-                ],
+                ),
               ),
             ),
           ),
@@ -204,4 +193,3 @@ class _CreateAccountPageState extends State<CreateAccountPage>
     );
   }
 }
-

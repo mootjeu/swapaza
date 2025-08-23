@@ -16,7 +16,6 @@ class _CreateAccountPageState extends State<CreateAccountPage>
   String _password = '';
   String _confirmPassword = '';
 
-  // 🎨 Kleuren
   static const backgroundColor = Color(0xFFF5F5F5);
   static const fieldColor = Color(0xFFE6E6FA);
   static const textColor = Color(0xFF580F41);
@@ -53,6 +52,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
   void _submit() {
     if (_formKey.currentState!.validate() && _agreedToTerms) {
       print('✅ Account aangemaakt voor $_email');
+      Navigator.pop(context); // terug naar login
     } else if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Je moet akkoord gaan met de voorwaarden')),
@@ -75,27 +75,36 @@ class _CreateAccountPageState extends State<CreateAccountPage>
 
   @override
   Widget build(BuildContext context) {
-    const double logoHeight = 50; // vaste hoogte logo
-
     return Scaffold(
       backgroundColor: backgroundColor,
+      appBar: AppBar(
+        backgroundColor: backgroundColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: textColor),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
       resizeToAvoidBottomInset: true,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            children: [
-              // 🔹 Formulier boven
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Form(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Form(
                     key: _formKey,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         const SizedBox(height: 32),
                         TextFormField(
-                          decoration: _inputDecoration('Swapaza username or email'),
+                          decoration:
+                              _inputDecoration('Swapaza username or email'),
                           style: const TextStyle(color: textColor),
                           onChanged: (val) => _email = val,
                           validator: (val) =>
@@ -138,10 +147,10 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Expanded(
+                            const Expanded(
                               child: Text(
                                 'I agree to the terms of service and privacy policy',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 14,
                                   color: textColor,
                                 ),
@@ -173,29 +182,26 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                       ],
                     ),
                   ),
-                ),
-              ),
-
-              // 🔹 Logo onderaan, kleiner
-              const SizedBox(height: 16),
-              FadeTransition(
-                opacity: _fadeAnimation,
-                child: ScaleTransition(
-                  scale: _scaleAnimation,
-                  child: Image.asset(
-                    'assets/swapaza_logo.png',
-                    height: logoHeight,
-                    fit: BoxFit.contain,
+                  const SizedBox(height: 16),
+                  FadeTransition(
+                    opacity: _fadeAnimation,
+                    child: ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Image.asset(
+                        'assets/swapaza_logo.png',
+                        height: 50,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 32),
+                ],
               ),
-              const SizedBox(height: 32),
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-
 

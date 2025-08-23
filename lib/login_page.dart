@@ -28,20 +28,29 @@ class _LoginPageState extends State<LoginPage>
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
+  late Animation<double> _rotationAnimation;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 1200),
     );
+
     _fadeAnimation =
         CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scaleAnimation = Tween<double>(begin: 0.95, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
-    Future.delayed(const Duration(milliseconds: 200), () {
+
+    _rotationAnimation = Tween<double>(begin: -0.05, end: 0.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
+    );
+
+    // Start de animatie kort na opbouw
+    Future.delayed(const Duration(milliseconds: 150), () {
       if (mounted) _controller.forward();
     });
   }
@@ -117,7 +126,7 @@ class _LoginPageState extends State<LoginPage>
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
             color: Colors.black26,
             offset: Offset(0, 4),
@@ -150,7 +159,7 @@ class _LoginPageState extends State<LoginPage>
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: buttonTextColor,
-                  shadows: [
+                  shadows: const [
                     Shadow(
                       offset: Offset(0, 1),
                       blurRadius: 2,
@@ -186,16 +195,19 @@ class _LoginPageState extends State<LoginPage>
                       opacity: _fadeAnimation,
                       child: ScaleTransition(
                         scale: _scaleAnimation,
-                        child: Align(
-                          alignment: Alignment.center,
-                          child: Image.asset(
-                            'assets/swapaza_logo.png',
-                            height: 100,
+                        child: RotationTransition(
+                          turns: _rotationAnimation,
+                          child: Align(
+                            alignment: Alignment.center,
+                            child: Image.asset(
+                              'assets/swapaza_logo.png',
+                              height: 100,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 36), // iets minder hoog dan 48
+                    const SizedBox(height: 36),
 
                     TextField(
                       controller: usernameController,
@@ -224,21 +236,19 @@ class _LoginPageState extends State<LoginPage>
                       ),
                       style: GoogleFonts.poppins(color: textColor),
                     ),
-                    const SizedBox(height: 8), // compacter
+                    const SizedBox(height: 8),
 
                     Align(
                       alignment: Alignment.centerRight,
                       child: TextButton(
-                        onPressed: () {
-                          // TODO: Password recovery
-                        },
+                        onPressed: () {},
                         child: Text(
                           'Forgot password?',
                           style: GoogleFonts.poppins(color: textColor),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 16), // minder ruimte
+                    const SizedBox(height: 16),
 
                     _premiumButton(
                       text: 'Login',
@@ -256,7 +266,7 @@ class _LoginPageState extends State<LoginPage>
                         ),
                       ),
 
-                    const SizedBox(height: 18), // minder dan 24
+                    const SizedBox(height: 18),
                     Text(
                       'or',
                       style: GoogleFonts.poppins(
@@ -265,7 +275,7 @@ class _LoginPageState extends State<LoginPage>
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 18), // compacter
+                    const SizedBox(height: 18),
 
                     _premiumButton(
                       text: 'Create Account',
@@ -289,4 +299,3 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 }
-

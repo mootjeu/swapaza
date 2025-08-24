@@ -17,6 +17,9 @@ class _CreateAccountPageState extends State<CreateAccountPage>
   String _password = '';
   String _confirmPassword = '';
 
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
+
   static const backgroundColor = Color(0xFFF5F5F5);
   static const fieldColor = Color(0xFFE6E6FA);
   static const textColor = Color(0xFF580F41);
@@ -62,7 +65,7 @@ class _CreateAccountPageState extends State<CreateAccountPage>
     }
   }
 
-  InputDecoration _inputDecoration(String label) {
+  InputDecoration _inputDecoration(String label, {bool isPassword = false, VoidCallback? toggleVisibility, bool? obscure}) {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.poppins(color: textColor),
@@ -73,6 +76,15 @@ class _CreateAccountPageState extends State<CreateAccountPage>
         borderSide: BorderSide.none,
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+      suffixIcon: isPassword
+          ? IconButton(
+              icon: Icon(
+                obscure! ? Icons.visibility_off : Icons.visibility,
+                color: textColor,
+              ),
+              onPressed: toggleVisibility,
+            )
+          : null,
     );
   }
 
@@ -119,18 +131,33 @@ class _CreateAccountPageState extends State<CreateAccountPage>
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
-                            decoration: _inputDecoration('Password'),
+                            decoration: _inputDecoration(
+                              'Password',
+                              isPassword: true,
+                              obscure: _obscurePassword,
+                              toggleVisibility: () => setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              }),
+                            ),
                             style: GoogleFonts.poppins(color: textColor),
-                            obscureText: true,
+                            obscureText: _obscurePassword,
                             onChanged: (val) => _password = val,
                             validator: (val) =>
                                 val!.length < 6 ? 'Minimaal 6 tekens' : null,
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
-                            decoration: _inputDecoration('Confirm password'),
+                            decoration: _inputDecoration(
+                              'Confirm password',
+                              isPassword: true,
+                              obscure: _obscureConfirmPassword,
+                              toggleVisibility: () => setState(() {
+                                _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
+                              }),
+                            ),
                             style: GoogleFonts.poppins(color: textColor),
-                            obscureText: true,
+                            obscureText: _obscureConfirmPassword,
                             onChanged: (val) => _confirmPassword = val,
                             validator: (val) => val != _password
                                 ? 'Wachtwoorden komen niet overeen'

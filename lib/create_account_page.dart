@@ -10,11 +10,14 @@ class CreateAccountPage extends StatefulWidget {
 }
 
 class _CreateAccountPageState extends State<CreateAccountPage> {
-  final _usernameOrEmailController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   bool _loading = false;
+  bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
   String? _errorMessage;
 
   static const backgroundColor = Color(0xFFF5F5F5);
@@ -26,7 +29,8 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   @override
   void dispose() {
-    _usernameOrEmailController.dispose();
+    _emailController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -35,15 +39,19 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
   Future<void> _createAccount() async {
     FocusScope.of(context).unfocus();
 
-    final usernameOrEmail = _usernameOrEmailController.text.trim();
+    final email = _emailController.text.trim();
+    final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (usernameOrEmail.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+    if (email.isEmpty || username.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
       setState(() => _errorMessage = 'Please fill in all fields.');
       return;
     }
-
+    if (!email.contains('@') || !email.contains('.')) {
+      setState(() => _errorMessage = 'Please enter a valid email address.');
+      return;
+    }
     if (password != confirmPassword) {
       setState(() => _errorMessage = 'Passwords do not match.');
       return;
@@ -55,14 +63,35 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     });
 
     try {
-      final response = await Supabase.instance.client.auth.signUp(
-        email: usernameOrEmail,
+      // Check of username al bestaat
+      final existing = await Supabase.instance.client
+          .from('profiles')
+          .select('username')
+          .eq('username', username)
+          .maybeSingle();
+
+      if (existing != null) {
+        setState(() => _errorMessage = 'Username is already taken.');
+        return;
+      }
+
+      // Sign up in Supabase
+      final res = await Supabase.instance.client.auth.signUp(
+        email: email,
         password: password,
+        data: {'username': username},
       );
 
-      if (response.user != null) {
+      if (res.user != null) {
+        // Opslaan in profiles tabel
+        await Supabase.instance.client.from('profiles').insert({
+          'id': res.user!.id,
+          'username': username,
+          'email': email,
+        });
+
         _showSnack('✅ Account created! Please check your email to verify.');
-        Navigator.pop(context);
+        if (mounted) Navigator.pop(context);
       } else {
         setState(() => _errorMessage = 'Sign up failed. Please try again.');
       }
@@ -79,12 +108,13 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  InputDecoration _inputDecoration(String label) {
+  InputDecoration _inputDecoration(String label, {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.poppins(color: textColor),
       filled: true,
       fillColor: fieldColor,
+      suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide.none,
@@ -139,13 +169,6 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: buttonTextColor,
-                  shadows: const [
-                    Shadow(
-                      offset: Offset(0, 2),
-                      blurRadius: 3,
-                      color: Colors.black26,
-                    ),
-                  ],
                 ),
               ),
       ),
@@ -154,13 +177,13 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme =
-        GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme);
+    final textTheme = GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme);
 
     return Scaffold(
       backgroundColor: backgroundColor,
+      extendBodyBehindAppBar: true, // laat achtergrondkleur doorlopen tot boven
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: backgroundColor,
         foregroundColor: textColor,
         elevation: 0,
       ),
@@ -176,38 +199,66 @@ class _CreateAccountPageState extends State<CreateAccountPage> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     TextField(
-                      controller: _usernameOrEmailController,
+                      controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
-                      decoration: _inputDecoration('Username or email'),
+                      decoration: _inputDecoration('Email'),
                       style: GoogleFonts.poppins(color: textColor),
                     ),
                     const SizedBox(height: 20),
-
+                    TextField(
+                      controller: _usernameController,
+                      textInputAction: TextInputAction.next,
+                      decoration: _inputDecoration('Username (unique)'),
+                      style: GoogleFonts.poppins(color: textColor),
+                    ),
+                    const SizedBox(height: 20),
                     TextField(
                       controller: _passwordController,
-                      obscureText: true,
+                      obscureText: !_passwordVisible,
                       textInputAction: TextInputAction.next,
-                      decoration: _inputDecoration('Password'),
+                      decoration: _inputDecoration(
+                        'Password',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _passwordVisible
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: textColor,
+                          ),
+                          onPressed: () => setState(
+                              () => _passwordVisible = !_passwordVisible),
+                        ),
+                      ),
                       style: GoogleFonts.poppins(color: textColor),
                     ),
                     const SizedBox(height: 20),
-
                     TextField(
                       controller: _confirmPasswordController,
-                      obscureText: true,
+                      obscureText: !_confirmPasswordVisible,
                       textInputAction: TextInputAction.done,
-                      decoration: _inputDecoration('Confirm password'),
+                      decoration: _inputDecoration(
+                        'Confirm password',
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _confirmPasswordVisible
+                                ? Icons.visibility_off
+                                : Icons.visibility,
+                            color: textColor,
+                          ),
+                          onPressed: () => setState(
+                              () => _confirmPasswordVisible =
+                                  !_confirmPasswordVisible),
+                        ),
+                      ),
                       style: GoogleFonts.poppins(color: textColor),
                     ),
                     const SizedBox(height: 28),
-
                     _gradientButton(
                       text: 'Create account',
                       onPressed: _createAccount,
                       loading: _loading,
                     ),
-
                     if (_errorMessage != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 14),

@@ -13,12 +13,12 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage>
     with SingleTickerProviderStateMixin {
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
+  final _identifierController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  bool obscurePassword = true;
-  bool isLoading = false;
-  String? errorMessage;
+  bool _passwordVisible = false;
+  bool _loading = false;
+  String? _errorMessage;
 
   static const backgroundColor = Color(0xFFF5F5F5);
   static const fieldColor = Color(0xFFE6E6FA);
@@ -38,14 +38,11 @@ class _LoginPageState extends State<LoginPage>
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-
     _fadeAnimation =
         CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.05).animate(
       CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
     );
-
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) _controller.forward();
     });
@@ -54,35 +51,44 @@ class _LoginPageState extends State<LoginPage>
   @override
   void dispose() {
     _controller.dispose();
-    usernameController.dispose();
-    passwordController.dispose();
+    _identifierController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  void clearFields() {
-    usernameController.clear();
-    passwordController.clear();
-  }
-
-  Future<void> handleLogin() async {
+  Future<void> _handleLogin() async {
     FocusScope.of(context).unfocus();
 
-    final email = usernameController.text.trim();
-    final password = passwordController.text.trim();
+    var identifier = _identifierController.text.trim();
+    final password = _passwordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      setState(() => errorMessage = 'Please fill in both fields.');
+    if (identifier.isEmpty || password.isEmpty) {
+      setState(() => _errorMessage = 'Please fill in both fields.');
       return;
     }
 
     setState(() {
-      isLoading = true;
-      errorMessage = null;
+      _loading = true;
+      _errorMessage = null;
     });
 
     try {
+      // Check of het geen e-mail is → lookup username
+      if (!identifier.contains('@')) {
+        final profile = await Supabase.instance.client
+            .from('profiles')
+            .select('email')
+            .eq('username', identifier)
+            .maybeSingle();
+        if (profile == null) {
+          setState(() => _errorMessage = 'No account found for this username.');
+          return;
+        }
+        identifier = profile['email'] as String;
+      }
+
       final res = await Supabase.instance.client.auth.signInWithPassword(
-        email: email,
+        email: identifier,
         password: password,
       );
 
@@ -91,28 +97,32 @@ class _LoginPageState extends State<LoginPage>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => DashboardPage(username: email),
+            builder: (context) => DashboardPage(
+              username:
+                  res.user!.userMetadata?['username'] ?? identifier,
+            ),
           ),
         );
       } else {
-        setState(() => errorMessage =
+        setState(() => _errorMessage =
             'Login failed. Please check your credentials.');
       }
     } on AuthException catch (e) {
-      setState(() => errorMessage = e.message);
+      setState(() => _errorMessage = e.message);
     } catch (e) {
-      setState(() => errorMessage = 'Login failed. Please try again.');
+      setState(() => _errorMessage = 'Unexpected error: $e');
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) setState(() => _loading = false);
     }
   }
 
-  InputDecoration _inputDecoration(String label) {
+  InputDecoration _inputDecoration(String label, {Widget? suffixIcon}) {
     return InputDecoration(
       labelText: label,
       labelStyle: GoogleFonts.poppins(color: textColor),
       filled: true,
       fillColor: fieldColor,
+      suffixIcon: suffixIcon,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide.none,
@@ -121,11 +131,7 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  Widget _gradientButton({
-    required String text,
-    required VoidCallback onPressed,
-    bool loading = false,
-  }) {
+  Widget _gradientButton(String text, VoidCallback onPressed) {
     return Container(
       decoration: BoxDecoration(
         gradient: const LinearGradient(
@@ -143,7 +149,7 @@ class _LoginPageState extends State<LoginPage>
         ],
       ),
       child: ElevatedButton(
-        onPressed: loading ? null : onPressed,
+        onPressed: _loading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
@@ -152,7 +158,7 @@ class _LoginPageState extends State<LoginPage>
             borderRadius: BorderRadius.circular(14),
           ),
         ),
-        child: loading
+        child: _loading
             ? const SizedBox(
                 height: 22,
                 width: 22,
@@ -167,13 +173,6 @@ class _LoginPageState extends State<LoginPage>
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: buttonTextColor,
-                  shadows: const [
-                    Shadow(
-                      offset: Offset(0, 2),
-                      blurRadius: 3,
-                      color: Colors.black26,
-                    ),
-                  ],
                 ),
               ),
       ),
@@ -213,6 +212,11 @@ class _LoginPageState extends State<LoginPage>
 
     return Scaffold(
       backgroundColor: backgroundColor,
+      extendBodyBehindAppBar: true,
+      appBar: AppBar(
+        backgroundColor: backgroundColor,
+        elevation: 0,
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -226,72 +230,43 @@ class _LoginPageState extends State<LoginPage>
                   children: [
                     _animatedLogo(),
                     const SizedBox(height: 24),
-
-                    // E-mail/username veld
                     TextField(
-                      controller: usernameController,
-                      keyboardType: TextInputType.emailAddress,
+                      controller: _identifierController,
                       textInputAction: TextInputAction.next,
-                      decoration: _inputDecoration('Username or email'),
+                      decoration: _inputDecoration('Username or Email'),
                       style: GoogleFonts.poppins(color: textColor),
                     ),
-                    const SizedBox(height: 12),
-
-                    // Wachtwoord veld
+                    const SizedBox(height: 20),
                     TextField(
-                      controller: passwordController,
-                      obscureText: obscurePassword,
-                      textInputAction: TextInputAction.done,
-                      decoration: _inputDecoration('Password').copyWith(
+                      controller: _passwordController,
+                      obscureText: !_passwordVisible,
+                      decoration: _inputDecoration(
+                        'Password',
                         suffixIcon: IconButton(
                           icon: Icon(
-                            obscurePassword
+                            _passwordVisible
                                 ? Icons.visibility_off
                                 : Icons.visibility,
                             color: textColor,
                           ),
-                          onPressed: () =>
-                              setState(() => obscurePassword = !obscurePassword),
+                          onPressed: () => setState(
+                              () => _passwordVisible = !_passwordVisible),
                         ),
                       ),
                       style: GoogleFonts.poppins(color: textColor),
                     ),
-                    const SizedBox(height: 6),
-
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          // TODO: wachtwoord reset scherm openen
-                        },
-                        child: Text(
-                          'Forgot password?',
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: textColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // Login knop
-                    _gradientButton(
-                      text: 'Login',
-                      onPressed: handleLogin,
-                      loading: isLoading,
-                    ),
-
-                    if (errorMessage != null)
+                    const SizedBox(height: 28),
+                    _gradientButton('Login', _handleLogin),
+                    if (_errorMessage != null)
                       Padding(
-                        padding: const EdgeInsets.only(top: 10),
+                        padding: const EdgeInsets.only(top: 14),
                         child: Text(
-                          errorMessage!,
-                          style: const TextStyle(color: Colors.red),
+                          _errorMessage!,
+                          style:
+                              const TextStyle(color: Colors.red, fontSize: 14),
                           textAlign: TextAlign.center,
                         ),
                       ),
-
                     const SizedBox(height: 20),
                     Text(
                       'or',
@@ -302,18 +277,16 @@ class _LoginPageState extends State<LoginPage>
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),
-
-                    // Create account knop
                     _gradientButton(
-                      text: 'Create Account',
-                      onPressed: () async {
+                      'Create Account',
+                      () async {
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const CreateAccountPage(),
-                          ),
+                              builder: (context) => const CreateAccountPage()),
                         );
-                        clearFields();
+                        _identifierController.clear();
+                        _passwordController.clear();
                       },
                     ),
                   ],

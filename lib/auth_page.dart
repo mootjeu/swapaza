@@ -2,23 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'create_account_page.dart';
-import 'dashboard_page.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class AuthPage extends StatefulWidget {
+  const AuthPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<AuthPage> createState() => _AuthPageState();
 }
 
-class _LoginPageState extends State<LoginPage>
-    with SingleTickerProviderStateMixin {
-  final usernameController = TextEditingController();
-  final passwordController = TextEditingController();
+class _AuthPageState extends State<AuthPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
-  bool obscurePassword = true;
-  bool isLoading = false;
-  String? errorMessage;
+  bool _loading = false;
+  String? _errorMessage;
 
   static const backgroundColor = Color(0xFFF5F5F5);
   static const fieldColor = Color(0xFFE6E6FA);
@@ -27,84 +24,53 @@ class _LoginPageState extends State<LoginPage>
   static const buttonGradientEnd = Color(0xFF4A00E0);
   static const buttonTextColor = Color(0xFFF5F5F5);
 
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
-  late Animation<double> _scaleAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-
-    _fadeAnimation =
-        CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
-    );
-
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) _controller.forward();
-    });
-  }
-
   @override
   void dispose() {
-    _controller.dispose();
-    usernameController.dispose();
-    passwordController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
-  void clearFields() {
-    usernameController.clear();
-    passwordController.clear();
-  }
-
-  Future<void> handleLogin() async {
+  Future<void> _login() async {
     FocusScope.of(context).unfocus();
 
-    final email = usernameController.text.trim();
-    final password = passwordController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
 
     if (email.isEmpty || password.isEmpty) {
-      setState(() => errorMessage = 'Please fill in both fields.');
+      setState(() => _errorMessage = 'Vul beide velden in.');
       return;
     }
 
     setState(() {
-      isLoading = true;
-      errorMessage = null;
+      _loading = true;
+      _errorMessage = null;
     });
 
     try {
-      final res = await Supabase.instance.client.auth.signInWithPassword(
+      final response = await Supabase.instance.client.auth.signInWithPassword(
         email: email,
         password: password,
       );
 
-      if (res.user != null) {
-        if (!mounted) return;
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => DashboardPage(username: email),
-          ),
-        );
+      if (response.session != null) {
+        _showSnack('✅ Ingelogd als ${response.user?.email}');
+        // TODO: Navigeer naar je dashboard of hoofdpagina
       } else {
-        setState(() => errorMessage =
-            'Login failed. Please check your credentials.');
+        setState(() => _errorMessage =
+            'Inloggen mislukt — controleer je gegevens.');
       }
     } on AuthException catch (e) {
-      setState(() => errorMessage = e.message);
+      setState(() => _errorMessage = e.message);
     } catch (e) {
-      setState(() => errorMessage = 'Login failed. Please try again.');
+      setState(() => _errorMessage = 'Onbekende fout: $e');
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _showSnack(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   InputDecoration _inputDecoration(String label) {
@@ -180,32 +146,6 @@ class _LoginPageState extends State<LoginPage>
     );
   }
 
-  Widget _animatedLogo() {
-    return FadeTransition(
-      opacity: _fadeAnimation,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Positioned(
-              top: 2,
-              child: Image.asset(
-                'assets/swapaza_logo.png',
-                height: 180,
-                color: Colors.black.withOpacity(0.12),
-              ),
-            ),
-            Image.asset(
-              'assets/swapaza_logo.png',
-              height: 180,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final textTheme =
@@ -213,6 +153,12 @@ class _LoginPageState extends State<LoginPage>
 
     return Scaffold(
       backgroundColor: backgroundColor,
+      appBar: AppBar(
+        title: const Text('Inloggen'),
+        backgroundColor: Colors.white,
+        foregroundColor: textColor,
+        elevation: 0,
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -224,69 +170,35 @@ class _LoginPageState extends State<LoginPage>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _animatedLogo(),
-                    const SizedBox(height: 24),
-
-                    // E-mail/username veld
                     TextField(
-                      controller: usernameController,
+                      controller: _emailController,
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
-                      decoration: _inputDecoration('Username or email'),
+                      decoration: _inputDecoration('E-mailadres'),
                       style: GoogleFonts.poppins(color: textColor),
                     ),
                     const SizedBox(height: 12),
 
-                    // Wachtwoord veld
                     TextField(
-                      controller: passwordController,
-                      obscureText: obscurePassword,
+                      controller: _passwordController,
+                      obscureText: true,
                       textInputAction: TextInputAction.done,
-                      decoration: _inputDecoration('Password').copyWith(
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
-                            color: textColor,
-                          ),
-                          onPressed: () =>
-                              setState(() => obscurePassword = !obscurePassword),
-                        ),
-                      ),
+                      decoration: _inputDecoration('Wachtwoord'),
                       style: GoogleFonts.poppins(color: textColor),
-                    ),
-                    const SizedBox(height: 6),
-
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: TextButton(
-                        onPressed: () {
-                          // TODO: wachtwoord reset scherm openen
-                        },
-                        child: Text(
-                          'Forgot password?',
-                          style: GoogleFonts.poppins(
-                            fontSize: 13,
-                            color: textColor,
-                          ),
-                        ),
-                      ),
                     ),
                     const SizedBox(height: 14),
 
-                    // Login knop
                     _gradientButton(
-                      text: 'Login',
-                      onPressed: handleLogin,
-                      loading: isLoading,
+                      text: 'Inloggen',
+                      onPressed: _login,
+                      loading: _loading,
                     ),
 
-                    if (errorMessage != null)
+                    if (_errorMessage != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 10),
                         child: Text(
-                          errorMessage!,
+                          _errorMessage!,
                           style: const TextStyle(color: Colors.red),
                           textAlign: TextAlign.center,
                         ),
@@ -294,26 +206,24 @@ class _LoginPageState extends State<LoginPage>
 
                     const SizedBox(height: 20),
                     Text(
-                      'or',
+                      'Nog geen account?',
                       style: GoogleFonts.poppins(
                         fontSize: 15,
                         color: textColor,
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
 
-                    // Create account knop
                     _gradientButton(
-                      text: 'Create Account',
-                      onPressed: () async {
-                        await Navigator.push(
+                      text: 'Registreer hier',
+                      onPressed: () {
+                        Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const CreateAccountPage(),
+                            builder: (_) => const CreateAccountPage(),
                           ),
                         );
-                        clearFields();
                       },
                     ),
                   ],

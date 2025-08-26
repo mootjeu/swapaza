@@ -37,15 +37,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: const Duration(milliseconds: 900),
     );
     _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.05).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    _scaleAnimation = Tween<double>(begin: 0.9, end: 1.02).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
     );
-    Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) _controller.forward();
-    });
+    _controller.forward();
   }
 
   @override
@@ -93,8 +91,9 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         password: password,
       );
 
+      if (!mounted) return;
+
       if (res.user != null) {
-        if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -152,7 +151,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.transparent,
           shadowColor: Colors.transparent,
-          padding: const EdgeInsets.symmetric(vertical: 16),
+          padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -179,27 +178,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   }
 
   Widget _animatedLogo(double logoHeight) {
-    // Bewaart jouw originele shadow-stijl
     return FadeTransition(
       opacity: _fadeAnimation,
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Positioned(
-              top: 2,
-              child: Image.asset(
-                'assets/swapaza_logo.png',
-                height: logoHeight,
-                color: Colors.black.withOpacity(0.12),
-              ),
-            ),
-            Image.asset(
-              'assets/swapaza_logo.png',
-              height: logoHeight,
-            ),
-          ],
+        child: Image.asset(
+          'assets/swapaza_logo.png',
+          height: logoHeight,
         ),
       ),
     );
@@ -208,140 +193,169 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final textTheme = GoogleFonts.poppinsTextTheme(Theme.of(context).textTheme);
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final mq = MediaQuery.of(context);
+    final bottomInset = mq.viewInsets.bottom;
     final keyboardOpen = bottomInset > 0;
+    final screenH = mq.size.height;
+    final compact = screenH < 700;
+
+    // Kleiner logo en ultra-kleine gap eronder
+    final double logoHeight = keyboardOpen
+        ? (compact ? 56.0 : 64.0)
+        : (compact ? 84.0 : 100.0);
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: backgroundColor,
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           backgroundColor: backgroundColor,
           elevation: 0,
+          toolbarHeight: 0, // geen extra top-ruimte
         ),
         body: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final logoHeight = keyboardOpen ? 80.0 : 140.0;
+          child: Theme(
+            data: Theme.of(context).copyWith(textTheme: textTheme),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Logo strak tegen bovenkant met minimale ruimte
+                Padding(
+                  padding: const EdgeInsets.only(top: 0, bottom: 6),
+                  child: _animatedLogo(logoHeight),
+                ),
 
-              return Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 420),
-                  child: Theme(
-                    data: Theme.of(context).copyWith(textTheme: textTheme),
+                // Form-blok met zeer compacte spacing en netjes gegroepeerd
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.topCenter,
                     child: SingleChildScrollView(
-                      padding: EdgeInsets.fromLTRB(20, 20, 20, bottomInset + 16),
-                      physics: const BouncingScrollPhysics(),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          _animatedLogo(logoHeight),
-                          const SizedBox(height: 20),
-
-                          // Identifier
-                          TextField(
-                            controller: _identifierController,
-                            textInputAction: TextInputAction.next,
-                            decoration: _inputDecoration('Username or Email'),
-                            style: GoogleFonts.poppins(color: textColor),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Password
-                          TextField(
-                            controller: _passwordController,
-                            obscureText: !_passwordVisible,
-                            decoration: _inputDecoration(
-                              'Password',
-                              suffixIcon: IconButton(
-                                icon: Icon(
-                                  _passwordVisible ? Icons.visibility_off : Icons.visibility,
-                                  color: textColor,
-                                ),
-                                onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
-                              ),
-                            ),
-                            style: GoogleFonts.poppins(color: textColor),
-                            onSubmitted: (_) => _handleLogin(),
-                          ),
-
-                          // Forgot password
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => const ForgotPasswordPage(),
+                      padding: EdgeInsets.only(
+                        left: 20,
+                        right: 20,
+                        bottom: bottomInset + 12, // boven het toetsenbord
+                      ),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 420),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Groepeer velden + knoppen in één visueel blok
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Colors.black12,
+                                    blurRadius: 10,
+                                    offset: Offset(0, 4),
                                   ),
-                                );
-                              },
-                              child: Text(
-                                'Forgot password?',
-                                style: GoogleFonts.poppins(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                  color: buttonGradientEnd,
-                                ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  TextField(
+                                    controller: _identifierController,
+                                    textInputAction: TextInputAction.next,
+                                    decoration: _inputDecoration('Username or Email'),
+                                    style: GoogleFonts.poppins(color: textColor),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  TextField(
+                                    controller: _passwordController,
+                                    obscureText: !_passwordVisible,
+                                    decoration: _inputDecoration(
+                                      'Password',
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _passwordVisible ? Icons.visibility_off : Icons.visibility,
+                                          color: textColor,
+                                        ),
+                                        onPressed: () => setState(() {
+                                          _passwordVisible = !_passwordVisible;
+                                        }),
+                                      ),
+                                    ),
+                                    style: GoogleFonts.poppins(color: textColor),
+                                    onSubmitted: (_) => _handleLogin(),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Align(
+                                    alignment: Alignment.centerRight,
+                                    child: TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => const ForgotPasswordPage(),
+                                          ),
+                                        );
+                                      },
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                                        minimumSize: const Size(0, 32),
+                                      ),
+                                      child: Text(
+                                        'Forgot password?',
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: buttonGradientEnd,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  _gradientButton('Login', _handleLogin),
+                                  if (_errorMessage != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 10),
+                                      child: Text(
+                                        _errorMessage!,
+                                        style: const TextStyle(color: Colors.red, fontSize: 14),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  const SizedBox(height: 10),
+                                  Center(
+                                    child: Text(
+                                      'or',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  _gradientButton(
+                                    'Create Account',
+                                    () async {
+                                      await Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) => const CreateAccountPage(),
+                                        ),
+                                      );
+                                      _identifierController.clear();
+                                      _passwordController.clear();
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
-                          ),
-
-                          // Login button
-                          _gradientButton('Login', _handleLogin),
-
-                          // Error message
-                          if (_errorMessage != null)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 12),
-                              child: Text(
-                                _errorMessage!,
-                                style: const TextStyle(color: Colors.red, fontSize: 14),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-
-                          const SizedBox(height: 20),
-
-                          // "or" divider (centraal, geen Row → geen right overflow)
-                          Center(
-                            child: Text(
-                              'or',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                color: textColor,
-                              ),
-                              textAlign: TextAlign.center,
-                              softWrap: true,
-                            ),
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // Create Account button (los, centraal)
-                          _gradientButton(
-                            'Create Account',
-                            () async {
-                              await Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const CreateAccountPage(),
-                                ),
-                              );
-                              _identifierController.clear();
-                              _passwordController.clear();
-                            },
-                          ),
-
-                          const SizedBox(height: 12),
-                        ],
+                            const SizedBox(height: 8),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              );
-            },
+              ],
+            ),
           ),
         ),
       ),

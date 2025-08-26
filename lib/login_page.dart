@@ -22,7 +22,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
   // Kleuren
   static const backgroundColor = Color(0xFFF5F5F5);
-  static const fieldColor = Color(0xFFE6E6FA);
+  static const fieldColor = Color(0xFFE6E6FA); // lavendel, duidelijk zichtbaar
   static const textColor = Color(0xFF580F41);
   static const buttonGradientStart = Color(0xFF8E2DE2);
   static const buttonGradientEnd = Color(0xFF4A00E0);
@@ -138,13 +138,6 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black26,
-            offset: Offset(0, 4),
-            blurRadius: 8,
-          ),
-        ],
       ),
       child: ElevatedButton(
         onPressed: _loading ? null : onPressed,
@@ -199,10 +192,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     final screenH = mq.size.height;
     final compact = screenH < 700;
 
-    // Kleiner logo en ultra-kleine gap eronder
+    // Groter logo bij gesloten toetsenbord
     final double logoHeight = keyboardOpen
-        ? (compact ? 56.0 : 64.0)
-        : (compact ? 84.0 : 100.0);
+        ? (compact ? 70.0 : 78.0)
+        : (compact ? 110.0 : 130.0);
 
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
@@ -212,7 +205,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         appBar: AppBar(
           backgroundColor: backgroundColor,
           elevation: 0,
-          toolbarHeight: 0, // geen extra top-ruimte
+          toolbarHeight: 0,
         ),
         body: SafeArea(
           child: Theme(
@@ -225,8 +218,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   padding: const EdgeInsets.only(top: 0, bottom: 6),
                   child: _animatedLogo(logoHeight),
                 ),
-
-                // Form-blok met zeer compacte spacing en netjes gegroepeerd
+                // Form-blok, geen kleur/schaduw zodat er geen “rechthoek” zichtbaar is
                 Expanded(
                   child: Align(
                     alignment: Alignment.topCenter,
@@ -234,26 +226,18 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                       padding: EdgeInsets.only(
                         left: 20,
                         right: 20,
-                        bottom: bottomInset + 12, // boven het toetsenbord
+                        bottom: bottomInset + 12,
                       ),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 420),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            // Groepeer velden + knoppen in één visueel blok
                             Container(
                               padding: const EdgeInsets.all(12),
+                              // Geen decoration-kleur en geen boxShadow => blok is onzichtbaar
                               decoration: BoxDecoration(
-                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
-                                boxShadow: const [
-                                  BoxShadow(
-                                    color: Colors.black12,
-                                    blurRadius: 10,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,

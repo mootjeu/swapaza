@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'create_account_page.dart';
 import 'dashboard_page.dart';
+import 'forgot_password_page.dart'; // ✅ import toegevoegd
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -73,7 +74,6 @@ class _LoginPageState extends State<LoginPage>
     });
 
     try {
-      // Check of het geen e-mail is → lookup username
       if (!identifier.contains('@')) {
         final profile = await Supabase.instance.client
             .from('profiles')
@@ -98,8 +98,7 @@ class _LoginPageState extends State<LoginPage>
           context,
           MaterialPageRoute(
             builder: (context) => DashboardPage(
-              username:
-                  res.user!.userMetadata?['username'] ?? identifier,
+              username: res.user!.userMetadata?['username'] ?? identifier,
             ),
           ),
         );
@@ -255,7 +254,32 @@ class _LoginPageState extends State<LoginPage>
                       ),
                       style: GoogleFonts.poppins(color: textColor),
                     ),
-                    const SizedBox(height: 28),
+
+                    // ✅ Forgot Password link toegevoegd
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  const ForgotPasswordPage(),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'Forgot password?',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: buttonGradientEnd,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
                     _gradientButton('Login', _handleLogin),
                     if (_errorMessage != null)
                       Padding(
@@ -283,7 +307,8 @@ class _LoginPageState extends State<LoginPage>
                         await Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => const CreateAccountPage()),
+                              builder: (context) =>
+                                  const CreateAccountPage()),
                         );
                         _identifierController.clear();
                         _passwordController.clear();

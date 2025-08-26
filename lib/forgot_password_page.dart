@@ -41,7 +41,12 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
     });
 
     try {
-      await Supabase.instance.client.auth.resetPasswordForEmail(email);
+      await Supabase.instance.client.auth.resetPasswordForEmail(
+        email,
+        // 🔑 Link naar jouw HTML-resetpagina op Cloudflare
+        redirectTo: 'https://swapaza.pages.dev/reset-password.html',
+      );
+
       setState(() => _message = '📧 Check your email for the reset link.');
     } on AuthException catch (e) {
       setState(() => _message = e.message);
